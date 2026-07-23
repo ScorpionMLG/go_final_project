@@ -45,59 +45,60 @@ func authHandler(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	if err != nil {
 		err = fmt.Errorf("incorrect JSON. %w", err)
-		writeJson(res, err)
+		writeJson(res, err, 400)
 		return
 	}
 	if passwordJSON.Password == os.Getenv("TODO_PASSWORD") {
 		token, err := CreateToken(passwordJSON.Password)
 		if err != nil {
 			err = fmt.Errorf("create token error. %w", err)
-			writeJson(res, err)
+			writeJson(res, err, 500)
 			return
 		}
 		var tokenStruct Token
 		tokenStruct.Token = token
-		writeJson(res, tokenStruct)
+		writeJson(res, tokenStruct, 200)
 		return
 	}
-	writeJson(res, fmt.Errorf("Неверный пароль"))
+	writeJson(res, fmt.Errorf("Неверный пароль"), 400)
 }
 
 func auth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		pass := os.Getenv("TODO_PASSWORD")
-		if pass == "" {
+		if len(pass) == 0 {
 			next(res, req)
 			return
 		}
-		if len(pass) > 0 {
-			var jwtToken string // JWT-токен из куки
-			// получаем куку
-			cookie, err := req.Cookie("token")
-			if err == nil {
-				jwtToken = cookie.Value
-			}
-			var valid bool
-			// здесь код для валидации и проверки JWT-токена
-			var claims Claims
-			token, err := jwt.ParseWithClaims(jwtToken, &claims, func(token *jwt.Token) (interface{}, error) {
-				// проверяем алгоритм подписи
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("неверный метод подписи")
-				}
-				return []byte(pass), nil
-			})
-			if err != nil || claims.PasswordHash != hashPassword(pass) {
-				http.Error(res, "bad token.", http.StatusUnauthorized)
-				return
-			}
-			valid = token.Valid
-			if !valid {
-				// возвращаем ошибку авторизации 401
-				http.Error(res, "authentification required.", http.StatusUnauthorized)
-				return
-			}
+
+		var jwtToken string // JWT-токен из куки
+		// получаем куку
+		cookie, err := req.Cookie("token")
+		if err == nil {
+			jwtToken = cookie.Value
 		}
+
+		// здесь код для валидации и проверки JWT-токена
+		var claims Claims
+		token, err := jwt.ParseWithClaims(jwtToken, &claims, func(token *jwt.Token) (interface{}, error) {
+			// проверяем алгоритм подписи
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("неверный метод подписи")
+			}
+			return []byte(pass), nil
+		})
+
+		// возвращаем ошибку авторизации 401
+		if err != nil || claims.PasswordHash != hashPassword(pass) {
+			http.Error(res, "bad token.", http.StatusUnauthorized)
+			return
+		}
+
+		if !token.Valid {
+			http.Error(res, "authentification required.", http.StatusUnauthorized)
+			return
+		}
+
 		next(res, req)
 	})
 }

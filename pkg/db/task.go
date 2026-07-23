@@ -93,6 +93,7 @@ WHERE id = :id;
 	return nil
 }
 
+// Получает задачи из базы данных
 func Tasks(limit int, srch string) ([]*Task, error) {
 	var query string
 	tasks := make([]*Task, 0, limit)

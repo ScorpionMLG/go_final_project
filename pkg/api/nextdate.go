@@ -70,8 +70,8 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 
 	switch periodType {
 	case "d":
-		if periodNumbers[0] > 400 {
-			return "", fmt.Errorf("incorrect repeat time. value shoud be <= 400. %d", periodNumbers[0])
+		if periodNumbers[0] > 400 || periodNumbers[0] <= 0 {
+			return "", fmt.Errorf("incorrect repeat time. value shoud be > 0 & <= 400. %d", periodNumbers[0])
 		}
 		if after {
 			newTime = dStartTime.AddDate(0, 0, periodNumbers[0])

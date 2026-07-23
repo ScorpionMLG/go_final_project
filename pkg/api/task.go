@@ -13,6 +13,6 @@ func taskHandler(res http.ResponseWriter, req *http.Request) {
 	case http.MethodDelete:
 		deleteTaskHandler(res, req)
 	default:
-		http.Error(res, "incorrect request: "+req.Method, http.StatusBadRequest)
+		http.Error(res, "incorrect request: "+req.Method, http.StatusMethodNotAllowed)
 	}
 }

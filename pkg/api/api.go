@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -14,9 +15,10 @@ func Init(mux *http.ServeMux) {
 	mux.HandleFunc("/api/tasks", auth(tasksHandler))
 }
 
-func writeJson(res http.ResponseWriter, data any) {
+func writeJson(res http.ResponseWriter, data any, status int) {
 	if data == nil {
 		data = struct{}{}
+		status = 200
 	}
 	marshal, err := json.Marshal(data)
 	if err != nil {
@@ -29,8 +31,17 @@ func writeJson(res http.ResponseWriter, data any) {
 			Error string `json:"error"`
 		}
 		var errorStruct errorJSON
-		errorStruct.Error = fmt.Sprint(data)
-		marshal, _ = json.Marshal(errorStruct)
+		if status >= 500 {
+			errorStruct.Error = "Внутренняя ошибка"
+			log.Print(data)
+		} else {
+			errorStruct.Error = fmt.Sprint(data)
+		}
+		marshal, err = json.Marshal(errorStruct)
+		if err != nil {
+			log.Printf("marshal error. %v", err)
+		}
 	}
+	res.WriteHeader(status)
 	res.Write(marshal)
 }

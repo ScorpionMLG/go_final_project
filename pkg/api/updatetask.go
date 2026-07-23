@@ -13,25 +13,25 @@ func updateTaskHandler(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	if err != nil {
 		err = fmt.Errorf("incorrect JSON. %w", err)
-		writeJson(res, err)
+		writeJson(res, err, 400)
 		return
 	}
 	if task.Title == "" {
 		err = fmt.Errorf("incorrect title. %w", err)
-		writeJson(res, err)
+		writeJson(res, err, 400)
 		return
 	}
 	err = checkDate(&task)
 	if err != nil {
 		err = fmt.Errorf("incorrect date. %w", err)
-		writeJson(res, err)
+		writeJson(res, err, 400)
 		return
 	}
 	err = db.UpdateTask(&task)
 	if err != nil {
 		err = fmt.Errorf("db error. %w", err)
-		writeJson(res, err)
+		writeJson(res, err, 500)
 		return
 	}
-	writeJson(res, task)
+	writeJson(res, task, 200)
 }
